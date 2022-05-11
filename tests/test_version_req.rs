@@ -21,7 +21,7 @@ use semver::VersionReq;
 fn assert_match_all(req: &VersionReq, versions: &[&str]) {
     for string in versions {
         let parsed = version(string);
-        assert!(req.matches(&parsed), "did not match {}", string);
+        assert!(req.matches(&parsed), "{} did not match {}", req, string);
     }
 }
 
@@ -29,7 +29,7 @@ fn assert_match_all(req: &VersionReq, versions: &[&str]) {
 fn assert_match_none(req: &VersionReq, versions: &[&str]) {
     for string in versions {
         let parsed = version(string);
-        assert!(!req.matches(&parsed), "matched {}", string);
+        assert!(!req.matches(&parsed), "{} matched {}", req, string);
     }
 }
 
@@ -105,14 +105,18 @@ pub fn test_less_than() {
         &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"],
     );
 
+    let ref r = req("<1.0");
+    assert_match_none(r, &["1.0.0-beta"]);
+
+    // All the following should probably be in test_multiple
     let ref r = req(">1.0.0-alpha, <1.0.0");
     assert_match_all(r, &["1.0.0-beta"]);
 
     let ref r = req(">1.0.0-alpha, <1.0");
-    assert_match_none(r, &["1.0.0-beta"]);
+    assert_match_all(r, &["1.0.0-beta"]);
 
     let ref r = req(">1.0.0-alpha, <1");
-    assert_match_none(r, &["1.0.0-beta"]);
+    assert_match_all(r, &["1.0.0-beta"]);
 }
 
 #[test]
@@ -192,8 +196,19 @@ pub fn test_tilde() {
     assert_match_none(r, &["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
 
     let ref r = req("~1.2.3-beta.2");
-    assert_match_all(r, &["1.2.3", "1.2.4", "1.2.3-beta.2", "1.2.3-beta.4"]);
-    assert_match_none(r, &["1.3.3", "1.1.4", "1.2.3-beta.1", "1.2.4-beta.2"]);
+    assert_match_all(r, &["1.2.3-beta.2"]);
+    assert_match_none(
+        r,
+        &[
+            "1.1.4",
+            "1.2.3",
+            "1.2.4",
+            "1.2.3-beta.1",
+            "1.2.3-beta.4",
+            "1.2.4-beta.2",
+            "1.3.3",
+        ],
+    );
 }
 
 #[test]
@@ -218,21 +233,16 @@ pub fn test_caret() {
     assert_match_none(r, &["0.1.2-beta", "0.1.3-alpha", "0.2.0-pre"]);
 
     let ref r = req("^0.5.1-alpha3");
-    assert_match_all(
-        r,
-        &[
-            "0.5.1-alpha3",
-            "0.5.1-alpha4",
-            "0.5.1-beta",
-            "0.5.1",
-            "0.5.5",
-        ],
-    );
+    assert_match_all(r, &["0.5.1-alpha3"]);
     assert_match_none(
         r,
         &[
             "0.5.1-alpha1",
             "0.5.2-alpha3",
+            "0.5.1-alpha4",
+            "0.5.1-beta",
+            "0.5.1",
+            "0.5.5",
             "0.5.5-pre",
             "0.5.0-pre",
             "0.6.0",
@@ -252,18 +262,19 @@ pub fn test_caret() {
     assert_match_none(r, &["2.9.0", "1.1.1"]);
 
     let ref r = req("^1.4.2-beta.5");
-    assert_match_all(
-        r,
-        &["1.4.2", "1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"],
-    );
+    assert_match_all(r, &["1.4.2-beta.5"]);
     assert_match_none(
         r,
         &[
             "0.9.9",
-            "2.0.0",
+            "1.4.2",
+            "1.4.3",
             "1.4.2-alpha",
             "1.4.2-beta.4",
+            "1.4.2-beta.6",
+            "1.4.2-c",
             "1.4.3-beta.5",
+            "2.0.0",
         ],
     );
 }

@@ -79,40 +79,53 @@ fn test_exact() {
 pub fn test_greater_than() {
     let ref r = req(">= 1.0.0");
     assert_to_string(r, ">=1.0.0");
-    assert_match_all(r, &["1.0.0", "2.0.0"]);
-    assert_match_none(r, &["0.1.0", "0.0.1", "1.0.0-pre", "2.0.0-pre"]);
+    assert_match_all(r, &["1.0.0", "2.0.0", "2.0.0-pre"]);
+    assert_match_none(r, &["0.1.0", "0.0.1", "1.0.0-pre"]);
 
     let ref r = req(">= 2.1.0-alpha2");
     assert_to_string(r, ">=2.1.0-alpha2");
-    assert_match_all(r, &["2.1.0-alpha2", "2.1.0-alpha3", "2.1.0", "3.0.0"]);
-    assert_match_none(
+    assert_match_all(
         r,
-        &["2.0.0", "2.1.0-alpha1", "2.0.0-alpha2", "3.0.0-alpha2"],
+        &[
+            "2.1.0-alpha2",
+            "2.1.0-alpha3",
+            "2.1.0",
+            "3.0.0",
+            "3.0.0-alpha2",
+        ],
     );
+    assert_match_none(r, &["2.0.0", "2.1.0-alpha1", "2.0.0-alpha2"]);
 }
 
 #[test]
 pub fn test_less_than() {
     let ref r = req("< 1.0.0");
     assert_to_string(r, "<1.0.0");
-    assert_match_all(r, &["0.1.0", "0.0.1"]);
-    assert_match_none(r, &["1.0.0", "1.0.0-beta", "1.0.1", "0.9.9-alpha"]);
+    assert_match_all(r, &["0.1.0", "0.0.1", "1.0.0-beta", "0.9.9-alpha"]);
+    assert_match_none(r, &["1.0.0", "1.0.1", "1.0.1-beta", "2.0.0-alpha"]);
 
     let ref r = req("<= 2.1.0-alpha2");
-    assert_match_all(r, &["2.1.0-alpha2", "2.1.0-alpha1", "2.0.0", "1.0.0"]);
-    assert_match_none(
+    assert_match_all(
         r,
-        &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"],
+        &[
+            "2.1.0-alpha2",
+            "2.1.0-alpha1",
+            "2.0.0",
+            "1.0.0",
+            "2.0.0-alpha2",
+            "1.0.0-alpha2",
+        ],
     );
+    assert_match_none(r, &["2.1.0", "2.2.0-alpha1", "3.0.0", "3.2.4-alpha-9"]);
 
     let ref r = req(">1.0.0-alpha, <1.0.0");
     assert_match_all(r, &["1.0.0-beta"]);
 
     let ref r = req(">1.0.0-alpha, <1.0");
-    assert_match_none(r, &["1.0.0-beta"]);
+    assert_match_all(r, &["1.0.0-beta"]);
 
     let ref r = req(">1.0.0-alpha, <1");
-    assert_match_none(r, &["1.0.0-beta"]);
+    assert_match_all(r, &["1.0.0-beta"]);
 }
 
 #[test]
@@ -156,14 +169,13 @@ pub fn test_multiple() {
             "0.5.1-alpha4",
             "0.5.1-beta",
             "0.5.1",
+            "0.5.2-alpha3",
             "0.5.5",
+            "0.5.5-pre",
+            "0.6.0-pre",
         ],
     );
-    assert_match_none(
-        r,
-        &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"],
-    );
-    assert_match_none(r, &["0.6.0", "0.6.0-pre"]);
+    assert_match_none(r, &["0.5.1-alpha1", "0.5.0-pre", "0.6.0"]);
 
     // https://github.com/steveklabnik/semver/issues/56
     let err = req_err("1.2.3 - 2.3.4");
@@ -192,8 +204,19 @@ pub fn test_tilde() {
     assert_match_none(r, &["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
 
     let ref r = req("~1.2.3-beta.2");
-    assert_match_all(r, &["1.2.3", "1.2.4", "1.2.3-beta.2", "1.2.3-beta.4"]);
-    assert_match_none(r, &["1.3.3", "1.1.4", "1.2.3-beta.1", "1.2.4-beta.2"]);
+    assert_match_all(r, &["1.2.3-beta.2"]);
+    assert_match_none(
+        r,
+        &[
+            "1.2.3",
+            "1.2.4",
+            "1.2.3-beta.4",
+            "1.3.3",
+            "1.1.4",
+            "1.2.3-beta.1",
+            "1.2.4-beta.2",
+        ],
+    );
 }
 
 #[test]
@@ -218,16 +241,7 @@ pub fn test_caret() {
     assert_match_none(r, &["0.1.2-beta", "0.1.3-alpha", "0.2.0-pre"]);
 
     let ref r = req("^0.5.1-alpha3");
-    assert_match_all(
-        r,
-        &[
-            "0.5.1-alpha3",
-            "0.5.1-alpha4",
-            "0.5.1-beta",
-            "0.5.1",
-            "0.5.5",
-        ],
-    );
+    assert_match_none(r, &["0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
     assert_match_none(
         r,
         &[
@@ -252,10 +266,7 @@ pub fn test_caret() {
     assert_match_none(r, &["2.9.0", "1.1.1"]);
 
     let ref r = req("^1.4.2-beta.5");
-    assert_match_all(
-        r,
-        &["1.4.2", "1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"],
-    );
+    assert_match_none(r, &["1.4.2", "1.4.3", "1.4.2-beta.6", "1.4.2-c"]);
     assert_match_none(
         r,
         &[
@@ -277,8 +288,11 @@ pub fn test_wildcard() {
     );
 
     let ref r = req("*");
-    assert_match_all(r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
-    assert_match_none(r, &["1.0.0-pre"]);
+    assert_match_all(
+        r,
+        &["0.9.1", "2.9.0", "0.0.9", "1.0.0-pre", "1.0.1", "1.1.1"],
+    );
+    assert_match_none(r, &[]);
 
     for s in &["x", "X"] {
         assert_eq!(*r, req(s));

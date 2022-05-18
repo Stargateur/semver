@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 use crate::backport::*;
 use crate::error::{ErrorKind, Position};
 use crate::identifier::Identifier;
@@ -99,7 +101,7 @@ impl FromStr for VersionReq {
         }
 
         let depth = 0;
-        let mut comparators = Vec::new();
+        let mut comparators = SmallVec::new();
         let len = version_req(text, &mut comparators, depth)?;
         unsafe { comparators.set_len(len) }
         Ok(VersionReq { comparators })
@@ -364,7 +366,7 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
     Ok((comparator, pos, text))
 }
 
-fn version_req(input: &str, out: &mut Vec<Comparator>, depth: usize) -> Result<usize, Error> {
+fn version_req(input: &str, out: &mut SmallVec<[Comparator; 3]>, depth: usize) -> Result<usize, Error> {
     let (comparator, pos, text) = match comparator(input) {
         Ok(success) => success,
         Err(mut error) => {

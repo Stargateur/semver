@@ -100,7 +100,8 @@ mod parse;
 #[cfg(feature = "serde")]
 mod serde;
 
-use crate::alloc::vec::Vec;
+use smallvec::SmallVec;
+
 use crate::identifier::Identifier;
 use core::str::FromStr;
 
@@ -187,7 +188,7 @@ pub struct Version {
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 #[cfg_attr(no_const_vec_new, derive(Default))]
 pub struct VersionReq {
-    pub comparators: Vec<Comparator>,
+    pub comparators: SmallVec<[Comparator; 3]>,
 }
 
 /// A pair of comparison operator and partial version, such as `>=1.2`. Forms
@@ -449,7 +450,7 @@ impl VersionReq {
     /// component, it does not match any pre-release versions.
     #[cfg(not(no_const_vec_new))] // rustc <1.39
     pub const STAR: Self = VersionReq {
-        comparators: Vec::new(),
+        comparators: SmallVec::new_const(),
     };
 
     /// Create `VersionReq` by parsing from string representation.

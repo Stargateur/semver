@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 use crate::backport::*;
 use crate::identifier::Identifier;
 use crate::{BuildMetadata, Comparator, Prerelease, VersionReq};
@@ -150,7 +152,7 @@ impl FromIterator<Comparator> for VersionReq {
     where
         I: IntoIterator<Item = Comparator>,
     {
-        let comparators = Vec::from_iter(iter);
+        let comparators = SmallVec::from_iter(iter);
         VersionReq { comparators }
     }
 }
